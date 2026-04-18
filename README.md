@@ -1,9 +1,3 @@
-# Cybersecurity Tasks Report
-**Tasks Covered:** SSH Key Discovery (Task 3), Password Hashing (Task 9), Network Scanning with Nmap (Task 10)
-**Date:** April 18, 2026
-**Author:** d33
-
----
 
 ## Task 3 — SSH: Key Discovery Script
 
