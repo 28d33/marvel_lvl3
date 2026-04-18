@@ -213,6 +213,3 @@ The pattern of closed (not filtered) ports on .1 and .98 is different from the f
 
 The subnet scan shows a mostly locked-down environment with one exception: host .98 is running a wide range of services and deserves further investigation. In a real penetration test or security audit, this would be the first host to enumerate in depth.
 
----
-
-*Report generated from actual task outputs: `script.sh`, `tool.py`, `vault.json`, and `network_scan_report.html`.*
