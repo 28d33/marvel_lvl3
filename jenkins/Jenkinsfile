@@ -1,0 +1,133 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_COMPOSE = 'docker compose'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'cd app && docker compose build'
+            }
+        }
+
+        stage('Start Services') {
+            steps {
+                sh 'cd app && docker compose up -d'
+            }
+        }
+
+        stage('Resolve Port') {
+            steps {
+                script {
+                    env.FRONTEND_PORT = sh(
+                        script: 'docker compose -f app/docker-compose.yml port frontend 80 | cut -d: -f2',
+                        returnStdout: true
+                    ).trim()
+                }
+            }
+        }
+
+        stage('Wait for Services') {
+            steps {
+                sh '''
+                    echo "Frontend port: $FRONTEND_PORT"
+                    echo "Waiting for backend to be ready..."
+                    for i in $(seq 1 30); do
+                        if curl -s -o /dev/null -w "%{http_code}" http://localhost:$FRONTEND_PORT/api/auth/login -X POST -H "Content-Type: application/json" -d '{"username":"demo","password":"password"}' | grep -q "200"; then
+                            echo "Backend is ready!"
+                            exit 0
+                        fi
+                        sleep 2
+                    done
+                    echo "Backend failed to start"
+                    exit 1
+                '''
+            }
+        }
+
+        stage('Test API') {
+            steps {
+                sh '''
+                    # Test login
+                    RESPONSE=$(curl -s http://localhost:$FRONTEND_PORT/api/auth/login -X POST -H "Content-Type: application/json" -d '{"username":"demo","password":"password"}')
+                    echo "Login response: $RESPONSE"
+
+                    # Extract token
+                    TOKEN=$(echo $RESPONSE | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+                    if [ -z "$TOKEN" ]; then
+                        echo "ERROR: Failed to get token"
+                        exit 1
+                    fi
+
+                    # Test vaults
+                    echo "Testing vaults..."
+                    curl -s http://localhost:$FRONTEND_PORT/api/vaults -H "Authorization: Bearer $TOKEN"
+
+                    # Test items
+                    echo ""
+                    echo "Testing items..."
+                    curl -s http://localhost:$FRONTEND_PORT/api/vaults/1/items -H "Authorization: Bearer $TOKEN"
+
+                    echo ""
+                    echo "All API tests passed!"
+                '''
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+                sh '''
+                    echo "Checking service health..."
+                    docker compose -f app/docker-compose.yml ps
+                    echo ""
+                    echo "Frontend: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:$FRONTEND_PORT/)"
+                    echo "Backend API: $(curl -s -o /dev/null -w '%{http_code}' http://localhost:$FRONTEND_PORT/api/auth/login -X POST -H 'Content-Type: application/json' -d '{}')"
+                '''
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh '''
+                    TAG=${GIT_COMMIT:-latest}
+
+                    echo "Tagging backend image as $TAG..."
+                    docker tag marvel-pm-backend:latest marvel-pm-backend:$TAG
+                    docker tag marvel-pm-backend:latest $REGISTRY_URL/marvel-pm-backend:$TAG
+
+                    if [ -n "$REGISTRY_USER" ] && [ -n "$REGISTRY_TOKEN" ]; then
+                        echo "Logging in to $REGISTRY_URL..."
+                        echo "$REGISTRY_TOKEN" | docker login "$REGISTRY_URL" --username "$REGISTRY_USER" --password-stdin
+                    else
+                        echo "No registry credentials set, pushing anonymously."
+                    fi
+
+                    echo "Pushing $REGISTRY_URL/marvel-pm-backend:$TAG"
+                    docker push $REGISTRY_URL/marvel-pm-backend:$TAG
+                    docker push $REGISTRY_URL/marvel-pm-backend:latest
+
+                    echo "Deployed."
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed'
+        }
+        success {
+            echo "Build successful! App is live at http://localhost:${env.FRONTEND_PORT}"
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}

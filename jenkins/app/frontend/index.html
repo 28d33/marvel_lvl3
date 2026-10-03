@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Manager</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<section id="auth-view" class="view">
+  <div class="card">
+    <h1>Password Manager</h1>
+    <p class="sub">Master password locks everything. It is never stored.</p>
+    <div class="tabs">
+      <button type="button" id="tab-login" class="tab active">Login</button>
+      <button type="button" id="tab-register" class="tab">Register</button>
+    </div>
+    <form id="auth-form" autocomplete="off">
+      <div class="field">
+        <label for="auth-username">Username</label>
+        <input id="auth-username" type="text" required autocomplete="username">
+      </div>
+      <div class="field hidden" id="email-field">
+        <label for="auth-email">Email</label>
+        <input id="auth-email" type="email" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="auth-password">Master password</label>
+        <input id="auth-password" type="password" required autocomplete="current-password">
+      </div>
+      <button id="auth-submit" type="submit" class="primary">Login</button>
+      <p id="auth-error" class="error"></p>
+    </form>
+  </div>
+</section>
+
+<!-- ===================== APP ===================== -->
+<section id="app-view" class="view app hidden">
+  <header class="topbar">
+    <h1>Password Manager</h1>
+    <button id="logout" class="ghost">Logout</button>
+  </header>
+  <main class="container">
+    <div class="toolbar">
+      <div class="field inline">
+        <label for="vault-select">Vault</label>
+        <select id="vault-select"></select>
+      </div>
+      <button id="new-vault" class="ghost">+ Vault</button>
+      <button id="add-item" class="primary">+ Item</button>
+    </div>
+    <div id="item-list" class="items"></div>
+  </main>
+</section>
+
+<!-- ===================== ITEM FORM MODAL ===================== -->
+<div id="item-modal" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="item-modal-title">New item</h2>
+    <div class="field">
+      <label for="item-type">Type</label>
+      <select id="item-type">
+        <option value="password">Password</option>
+        <option value="note">Secure note</option>
+        <option value="totp">TOTP</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="item-title">Title</label>
+      <input id="item-title" type="text" required placeholder="e.g. GitHub">
+    </div>
+    <div id="item-fields"></div>
+    <div class="modal-actions">
+      <button id="item-cancel" class="ghost">Cancel</button>
+      <button id="item-save" class="primary">Save</button>
+    </div>
+    <p id="item-error" class="error"></p>
+  </div>
+</div>
+
+<!-- ===================== DETAIL MODAL ===================== -->
+<div id="detail-modal" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="detail-title"></h2>
+    <div id="detail-body"></div>
+    <div class="modal-actions">
+      <button id="detail-close" class="ghost">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

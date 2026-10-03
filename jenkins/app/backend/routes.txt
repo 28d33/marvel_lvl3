@@ -1,0 +1,38 @@
+POST   /api/auth/register          
+
+POST   /api/auth/login             
+
+POST   /api/auth/logout            
+
+GET    /api/vaults                 
+POST   /api/vaults                 
+
+PUT    /api/vaults/{id}            
+DELETE /api/vaults/{id}            
+
+GET    /api/vaults/{vaultId}/items    
+POST   /api/vaults/{vaultId}/items    
+
+GET    /api/items/{id}                
+PUT    /api/items/{id}                
+DELETE /api/items/{id}                 
+
+POST   /api/items/{itemId}/attachments     
+
+GET    /api/attachments/{id}               
+PUT    /api/attachments/{id}/chunks/{no}   
+GET    /api/attachments/{id}/chunks/{no}   
+GET    /api/attachments/{id}/chunks       
+
+GET    /api/categories            
+POST   /api/categories            
+
+POST   /api/items/{itemId}/categories   
+DELETE /api/items/{itemId}/categories/{categoryId}   
+POST   /api/items/{itemId}/share      
+
+GET    /api/shares                    
+PUT    /api/shares/{id}               
+DELETE /api/shares/{id}               
+
+GET    /api/audit                     
