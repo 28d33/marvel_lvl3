@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Two Person Chat</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 650px;
+      margin: 30px auto;
+      padding: 0 15px;
+    }
+
+    #login,
+    #chat {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    #chat {
+      display: none;
+    }
+
+    #messages {
+      height: 350px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    .message {
+      margin: 10px 0;
+      padding: 8px;
+      background: #f1f1f1;
+      border-radius: 6px;
+    }
+
+    .sender {
+      font-weight: bold;
+    }
+
+    input {
+      box-sizing: border-box;
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    button {
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+
+    #messageInput {
+      width: 78%;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Two Person Chat</h1>
+
+  <div id="login">
+    <h3>Enter your name</h3>
+
+    <input
+      id="nameInput"
+      placeholder="Your name"
+      maxlength="30"
+    >
+
+    <button onclick="joinChat()">Join chat</button>
+  </div>
+
+  <div id="chat">
+    <p>Logged in as <strong id="currentName"></strong></p>
+
+    <div id="messages"></div>
+
+    <input
+      id="messageInput"
+      placeholder="Type a message..."
+      maxlength="500"
+      onkeydown="handleKey(event)"
+    >
+
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const API_URL = "http://rf3d8cmvz3jq8qx178vjel88ezsu4mst.lambda-url.us-east-1.localhost.localstack.cloud:4566/";
+
+    let username = "";
+    let knownMessageIds = new Set();
+
+    function joinChat() {
+      const name = document
+        .getElementById("nameInput")
+        .value
+        .trim();
+
+      if (!name) {
+        alert("Enter your name first");
+        return;
+      }
+
+      username = name;
+
+      document.getElementById("currentName").textContent = username;
+      document.getElementById("login").style.display = "none";
+      document.getElementById("chat").style.display = "block";
+
+      loadMessages();
+      setInterval(loadMessages, 2000);
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const message = input.value.trim();
+
+      if (!message) return;
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            action: "send",
+            name: username,
+            message
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Could not send message");
+        }
+
+        input.value = "";
+        await loadMessages();
+      } catch (error) {
+        alert(error.message);
+        console.error(error);
+      }
+    }
+
+    async function loadMessages() {
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            action: "messages"
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Could not load messages");
+        }
+
+        const box = document.getElementById("messages");
+
+        for (const message of data.messages) {
+          if (knownMessageIds.has(message.id)) continue;
+
+          knownMessageIds.add(message.id);
+
+          const item = document.createElement("div");
+          item.className = "message";
+
+          const sender = document.createElement("div");
+          sender.className = "sender";
+          sender.textContent = message.name;
+
+          const text = document.createElement("div");
+          text.textContent = message.message;
+
+          item.appendChild(sender);
+          item.appendChild(text);
+          box.appendChild(item);
+        }
+
+        box.scrollTop = box.scrollHeight;
+      } catch (error) {
+        console.error("Could not load messages:", error);
+      }
+    }
+
+    function handleKey(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    }
+  </script>
+</body>
+</html>

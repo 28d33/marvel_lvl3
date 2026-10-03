@@ -1,0 +1,26 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        openssh-server \
+        sudo \
+        netcat-openbsd && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash d33 && \
+    echo 'd33:d33' | chpasswd && \
+    mkdir -p /home/d33/.ssh && \
+    chown -R d33:d33 /home/d33 && \
+    chmod 700 /home/d33/.ssh && \
+    echo 'd33 ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/d33 && \
+    chmod 440 /etc/sudoers.d/d33
+
+RUN ssh-keygen -A && \
+    mkdir -p /run/sshd && \
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/^#\?PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D", "-e"]
